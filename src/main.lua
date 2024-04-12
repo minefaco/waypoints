@@ -595,3 +595,40 @@ minetest.register_chatcommand('wp_toggle_hud', {
         pl:get_meta():set_string('h_s', minetest.serialize(h_ids))
     end),
 })
+
+minetest.register_privilege("waypoints_tp", {
+    description = "Allows teleportation to waypoints",
+    give_to_singleplayer = false,
+})
+
+minetest.register_chatcommand('wp_tp', {
+    params = '<name> [optional_playername]',
+    description = 'Teleport to a waypoint or teleport another player to a waypoint',
+    privs = { waypoints_tp = true },
+    func = saf(function(sender_name, param)
+        local pr = param:split(' ')
+        if #pr < 1 then
+            minetest.chat_send_player(sender_name, 'Usage: /wp_tp <name> [optional_playername]')
+            return
+        end
+
+        local wp_name = pr[1]
+        local target_player_name = pr[2] or sender_name
+
+        local player_waypoints = way[sender_name] or {}
+        local wp_data = player_waypoints[wp_name]
+        if not wp_data then
+            minetest.chat_send_player(sender_name, ('Waypoint "%s" not found.'):format(wp_name))
+            return
+        end
+
+        local target_player = minetest.get_player_by_name(target_player_name)
+        if not target_player then
+            minetest.chat_send_player(sender_name, ('Player "%s" not found.'):format(target_player_name))
+            return
+        end
+
+        target_player:set_pos(wp_data.position)
+        minetest.chat_send_player(sender_name, ('Teleported "%s" to waypoint "%s".'):format(target_player_name, wp_name))
+    end),
+})
